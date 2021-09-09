@@ -8,40 +8,81 @@ include("bd_cadrato.jl")
 include("bd_endereco.jl")
 include("endereco.jl")
 include("conta.jl")
+include("confir_Email.jl")
 
-route("/criarUser", method = POST) do 
+route("/addcpf", method = POST) do 
     cpf = postpayload(:cpf)
-    nome =postpayload(:nome)
-    senha = postpayload(:senha)
-    email = postpayload(:email)
-    telefone = postpayload(:telefone)
-    if bd_cadrato.verificar_existencia("cpf",cpf) == true
+
+    if (verifcar_num(cpf) == false ) || (length(cpf) != 11)
+      return "CPF invalido"
     
+    elseif bd_cadrato.verificar_existencia("cpf",cpf) == true
+      
       return "CPF já cadrastado"
-
-    elseif bd_cadrato.verificar_existencia("email",email) == true
+      
+    end
+      
+end
+      
+      nome =postpayload(:nome)
+      senha = postpayload(:senha)
+    email = postpayload(:email)
+    codigo = postpayload(:codigo)
+    senha_cartao= postpayload(:senha_cartao)
+    
+    
+    
+    
+    
+    if bd_cadrato.verificar_existencia("email",email) == true
       return "email já cadrastado"
-
-    elseif bd_cadrato.verificar_existencia("telefone",telefone) == true
+      
+    elseif confir_Email.enviar_email(email) != codigo 
+      return "codigo de confirmação incorreto"
+      
+      
+      
+      route("/addtelefone", method = POST) do 
+        telefone = postpayload(:telefone)
+        
+        if (verifcar_num(telefone) == false ) || (length(telefone) != 11)
+          return "telefone invalido"
+          
+        elseif bd_cadrato.verificar_existencia("telefone",telefone) == true
     
       return "telefone já cadrastado"
 
+
+    elseif length(senha) < 8 
+      return "Senha deve conter mais de 8 caracteres"
+
+    elseif (verifcar_num(senha_cartao) == false ) || (length(senha_cartao) != 6)
+        return "senha deve conter 6 numero "
+
     else
-      bd_cadrato.insert(cpf , nome , senha, email , telefone)
+      bd_cadrato.insert(cpf , nome , senha, email , telefone ,senha_cartao)
       dados = bd_cadrato.consultar("cpf" , cpf)
-      println(dados.id_cliente)
       bd_endereco.inseir_id(dados.id_cliente)
       conta.inseir_id(dados.id_cliente)
     end
     return "POST OK"
 
+
+
+function verifcar_num(palavra)
+try
+  typeof(parse(Int ,palavra))
+
+catch
+ 
+  return false
+end
+  return true
+
 end
 
-route("/getusers") do
-    
-  return bd_cadrato.verificar_existencia()
-end
 
 
-up(8002, async = false)
+
+up(8001, async = false)
 end
